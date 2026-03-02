@@ -20,41 +20,28 @@ export function useTimer(settings: Settings, onSessionComplete: (session: FocusS
     }
   }, [settings, type, state]);
 
-  const tick = useCallback(() => {
-    if (!endTimeRef.current) return;
-    const now = Date.now();
-    const remaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
-    setTimeLeft(remaining);
-
-    if (remaining === 0) {
-      handleComplete();
+  const start = useCallback(() => {
+    if (state === 'idle' || state === 'paused') {
+      endTimeRef.current = Date.now() + timeLeft * 1000;
+      setState('running');
     }
-  }, []);
-
-  useEffect(() => {
-    if (state === 'running') {
-      timerRef.current = window.setInterval(tick, 200);
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, [state, tick]);
+  }, [state, timeLeft]);
 
   const handleComplete = useCallback(() => {
     setState('idle');
     if (timerRef.current) clearInterval(timerRef.current);
     
     // Save session
-    const duration = type === 'focus' ? settings.focusDuration * 60 : 
-                     type === 'shortBreak' ? settings.shortBreakDuration * 60 : 
-                     settings.longBreakDuration * 60;
+    const totalDuration = type === 'focus' ? settings.focusDuration * 60 : 
+                         type === 'shortBreak' ? settings.shortBreakDuration * 60 : 
+                         settings.longBreakDuration * 60;
+    
+    const actualDuration = totalDuration - timeLeft;
 
     const session: FocusSession = {
       id: crypto.randomUUID(),
       intent: type === 'focus' ? (intent || 'Focused work') : 'Break',
-      duration,
+      duration: actualDuration > 0 ? actualDuration : totalDuration,
       completedAt: new Date().toISOString(),
       type,
     };
@@ -71,19 +58,46 @@ export function useTimer(settings: Settings, onSessionComplete: (session: FocusS
         setType('shortBreak');
         setTimeLeft(settings.shortBreakDuration * 60);
       }
+      
+      if (settings.autoStartBreak) {
+        setTimeout(() => start(), 100);
+      }
     } else {
       setType('focus');
       setTimeLeft(settings.focusDuration * 60);
       setIntent('');
+      
+      if (settings.autoStartFocus) {
+        setTimeout(() => start(), 100);
+      }
     }
-  }, [type, intent, settings, sessionsCompleted, onSessionComplete]);
+  }, [type, intent, settings, sessionsCompleted, onSessionComplete, start]);
 
-  const start = useCallback(() => {
-    if (state === 'idle' || state === 'paused') {
-      endTimeRef.current = Date.now() + timeLeft * 1000;
-      setState('running');
+  const tick = useCallback(() => {
+    if (!endTimeRef.current) return;
+    const now = Date.now();
+    const remaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
+    setTimeLeft(remaining);
+
+    if (remaining === 0) {
+      handleComplete();
     }
-  }, [state, timeLeft]);
+  }, [handleComplete]);
+
+  useEffect(() => {
+    if (state === 'running') {
+      timerRef.current = window.setInterval(tick, 200);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [state, tick]);
+
+  const skip = useCallback(() => {
+    handleComplete();
+  }, [handleComplete]);
 
   const pause = useCallback(() => {
     if (state === 'running') {
@@ -99,10 +113,6 @@ export function useTimer(settings: Settings, onSessionComplete: (session: FocusS
     else if (type === 'shortBreak') setTimeLeft(settings.shortBreakDuration * 60);
     else if (type === 'longBreak') setTimeLeft(settings.longBreakDuration * 60);
   }, [type, settings]);
-
-  const skip = useCallback(() => {
-    handleComplete();
-  }, [handleComplete]);
 
   return {
     state,

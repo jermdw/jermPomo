@@ -17,6 +17,8 @@ export interface Settings {
   focusSound: string;
   breakSound: string;
   dailyGoal: number; // in hours
+  autoStartFocus: boolean;
+  autoStartBreak: boolean;
 }
 
 export const AVAILABLE_SOUNDS = [

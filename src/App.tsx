@@ -15,6 +15,8 @@ const DEFAULT_SETTINGS: Settings = {
   focusSound: 'bell',
   breakSound: 'digital',
   dailyGoal: 4,
+  autoStartFocus: false,
+  autoStartBreak: false,
 };
 
 export default function App() {
@@ -150,6 +152,10 @@ export default function App() {
                         timer.type === 'shortBreak' ? settings.shortBreakDuration * 60 :
                         settings.longBreakDuration * 60;
 
+  const currentInterval = timer.type === 'focus' 
+    ? (timer.sessionsCompleted % settings.sessionsUntilLongBreak) + 1
+    : (((timer.sessionsCompleted - 1) % settings.sessionsUntilLongBreak) + settings.sessionsUntilLongBreak) % settings.sessionsUntilLongBreak + 1;
+
   return (
     <div className="min-h-screen flex flex-col transition-colors duration-300">
       {/* Header */}
@@ -221,6 +227,9 @@ export default function App() {
                 stop={timer.stop}
                 skip={timer.skip}
                 totalDuration={totalDuration}
+                currentInterval={currentInterval}
+                totalIntervals={settings.sessionsUntilLongBreak}
+                recentSessions={sessions.slice(-5).reverse()}
               />
             </motion.div>
           ) : (

@@ -12,9 +12,15 @@ export function Settings({ settings, onSave, onClose }: SettingsProps) {
   const [localSettings, setLocalSettings] = React.useState(settings);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target as HTMLInputElement;
     const isNumber = ['focusDuration', 'shortBreakDuration', 'longBreakDuration', 'sessionsUntilLongBreak', 'dailyGoal'].includes(name);
-    setLocalSettings(prev => ({ ...prev, [name]: isNumber ? (parseInt(value, 10) || 0) : value }));
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setLocalSettings(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setLocalSettings(prev => ({ ...prev, [name]: isNumber ? (parseInt(value, 10) || 0) : value }));
+    }
   };
 
   const playPreview = (soundId: string) => {
@@ -104,6 +110,36 @@ export function Settings({ settings, onSave, onClose }: SettingsProps) {
               max="24"
               className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 text-gray-900 dark:text-zinc-100 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
             />
+          </div>
+
+          <div className="border-t border-gray-100 dark:border-zinc-800 pt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-zinc-100">Auto-start Focus</label>
+                <p className="text-xs text-gray-500 dark:text-zinc-500">Start focus session automatically after break</p>
+              </div>
+              <input
+                type="checkbox"
+                name="autoStartFocus"
+                checked={localSettings.autoStartFocus}
+                onChange={handleChange}
+                className="w-5 h-5 rounded border-gray-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="block text-sm font-medium text-gray-900 dark:text-zinc-100">Auto-start Break</label>
+                <p className="text-xs text-gray-500 dark:text-zinc-500">Start break automatically after focus session</p>
+              </div>
+              <input
+                type="checkbox"
+                name="autoStartBreak"
+                checked={localSettings.autoStartBreak}
+                onChange={handleChange}
+                className="w-5 h-5 rounded border-gray-300 dark:border-zinc-800 text-indigo-600 focus:ring-indigo-500"
+              />
+            </div>
           </div>
 
           <div className="border-t border-gray-100 dark:border-zinc-800 pt-6 space-y-4">

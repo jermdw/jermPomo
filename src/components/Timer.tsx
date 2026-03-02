@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Play, Pause, Square, SkipForward } from 'lucide-react';
-import { TimerState, SessionType } from '../types';
+import { FocusSession, TimerState, SessionType } from '../types';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface TimerProps {
@@ -14,6 +14,9 @@ interface TimerProps {
   stop: () => void;
   skip: () => void;
   totalDuration: number; // in seconds
+  currentInterval: number;
+  totalIntervals: number;
+  recentSessions: FocusSession[];
 }
 
 export function Timer({
@@ -26,7 +29,10 @@ export function Timer({
   pause,
   stop,
   skip,
-  totalDuration
+  totalDuration,
+  currentInterval,
+  totalIntervals,
+  recentSessions
 }: TimerProps) {
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -52,8 +58,11 @@ export function Timer({
 
   return (
     <div className="flex flex-col items-center justify-center w-full max-w-md mx-auto p-8 bg-white dark:bg-zinc-900 rounded-3xl shadow-sm border border-gray-100 dark:border-zinc-800 transition-colors">
-      <div className="mb-6 text-sm font-medium tracking-widest text-gray-400 dark:text-zinc-500 uppercase">
+      <div className="mb-6 text-sm font-medium tracking-widest text-gray-400 dark:text-zinc-500 uppercase flex items-center gap-2">
         {label}
+        <span className="text-xs opacity-60 bg-gray-100 dark:bg-zinc-800 px-2 py-0.5 rounded-full transition-colors">
+          {currentInterval}/{totalIntervals}
+        </span>
       </div>
 
       {isFocus && state === 'idle' ? (
@@ -162,6 +171,30 @@ export function Timer({
             <SkipForward size={18} />
           </button>
         )}
+      </div>
+
+      {/* Recent Sessions List */}
+      <div className="w-full mt-10 pt-8 border-t border-gray-100 dark:border-zinc-800">
+        <h4 className="text-xs font-bold text-gray-400 dark:text-zinc-500 uppercase tracking-widest mb-4">Recent Sessions</h4>
+        <div className="space-y-3">
+          {recentSessions.length === 0 ? (
+            <div className="text-sm text-gray-300 dark:text-zinc-700 italic">No sessions yet</div>
+          ) : (
+            recentSessions.map((session) => (
+              <div key={session.id} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className={`w-1.5 h-1.5 rounded-full ${session.type === 'focus' ? 'bg-indigo-500' : 'bg-emerald-500'}`} />
+                  <span className="text-gray-600 dark:text-zinc-400 truncate max-w-[150px]">
+                    {session.intent || (session.type === 'focus' ? 'Deep Work' : 'Break')}
+                  </span>
+                </div>
+                <span className="text-gray-400 dark:text-zinc-600 font-mono text-xs">
+                  {Math.round(session.duration / 60)}m
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
